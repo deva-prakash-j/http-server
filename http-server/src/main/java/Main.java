@@ -1,3 +1,6 @@
+import bean.HttpRequest;
+import util.RequestUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ServerSocket;
@@ -8,8 +11,7 @@ public class Main {
 
         System.out.println("Started HTTP-SERVER");
 
-        try {
-            ServerSocket serverSocket = new ServerSocket(4221);
+        try(ServerSocket serverSocket = new ServerSocket(4221)){
 
             // Since the tester restarts your program quite often, setting SO_REUSEADDR
             // ensures that we don't run into 'Address already in use' errors
@@ -18,7 +20,14 @@ public class Main {
             Socket socket =  serverSocket.accept(); // Wait for connection from client.
             System.out.println("accepted new connection");
             InputStream inputStream = socket.getInputStream();
-            socket.getOutputStream().write("HTTP/1.1 200 OK\r\n\r\n".getBytes());
+
+            HttpRequest request = RequestUtil.getHttpRequest(inputStream);
+            String response = "404 Not Found";
+
+            if(request.path().equals("/") || request.path().isEmpty()) {
+                response = "200 OK";
+            }
+            socket.getOutputStream().write(String.format("HTTP/1.1 %s\r\n\r\n", response).getBytes());
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
         }
