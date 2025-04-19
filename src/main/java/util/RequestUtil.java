@@ -3,9 +3,11 @@ package util;
 import bean.HttpRequest;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -76,6 +78,16 @@ public class RequestUtil {
         }
 
         return headers;
+    }
+
+    public static String readFile(String directory, String fileName) {
+        try {
+            File requestFile = new File(directory, fileName).getCanonicalFile();
+            return Files.readString(requestFile.toPath());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
 

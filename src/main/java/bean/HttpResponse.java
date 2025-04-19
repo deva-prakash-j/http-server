@@ -11,24 +11,29 @@ public class HttpResponse {
     private int contentLength;
     private String body;
 
-    public void setStatusCode(int statusCode) {
+    public HttpResponse setStatusCode(int statusCode) {
         this.statusCode = statusCode;
+        return this;
     }
 
-    public void setStatusText(String statusText) {
+    public HttpResponse setStatusText(String statusText) {
         this.statusText = statusText;
+        return this;
     }
 
-    public void setContentType(String contentType) {
+    public HttpResponse setContentType(String contentType) {
         this.contentType = contentType;
+        return this;
     }
 
-    public void setContentLength(int contentLength) {
+    public HttpResponse setContentLength(int contentLength) {
         this.contentLength = contentLength;
+        return this;
     }
 
-    public void setBody(String body) {
+    public HttpResponse setBody(String body) {
         this.body = body;
+        return this;
     }
 
     public byte[] getBytes() {

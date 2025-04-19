@@ -1,6 +1,7 @@
 import bean.HttpRequest;
 import bean.HttpResponse;
 import bean.RouteMatch;
+import static constants.ServerConstants.*;
 import util.RequestUtil;
 import util.Router;
 
@@ -14,13 +15,38 @@ import java.util.concurrent.Executors;
 public class Main {
 
     private static Router router;
-    private static final int THREAD_POOL_SIZE = 10;
+    private static String directory;
 
     public static void initiateRouter() {
         router = new Router();
-        router.addRoute("", null);
-        router.addRoute("/echo/{str}", (request, params) -> params.get("str"));
-        router.addRoute("/user-agent", (request, params) -> request.getHeaders().getOrDefault("User-Agent", "Unknown"));
+        router.addRoute("", (request, param) -> new HttpResponse()
+                .setStatusCode(SUCCESS_STATUS_CODE).setStatusText(SUCCESS_STATUS_TEXT));
+        router.addRoute("/echo/{str}", (request, params) -> {
+            String str = params.get("str");
+            return new HttpResponse().setStatusCode(SUCCESS_STATUS_CODE).setStatusText(SUCCESS_STATUS_TEXT)
+                    .setContentType(CONTENT_TYPE_TEXT_PLAIN)
+                    .setContentLength(str.length())
+                    .setBody(str);});
+        router.addRoute("/user-agent", (request, params) -> {
+            String userAgent = request.getHeaders().getOrDefault("User-Agent", "Unknown");
+            return new HttpResponse().setStatusCode(SUCCESS_STATUS_CODE).setStatusText(SUCCESS_STATUS_TEXT)
+                    .setContentType(CONTENT_TYPE_TEXT_PLAIN)
+                    .setContentLength(userAgent.length())
+                    .setBody(userAgent);
+        });
+        router.addRoute("/files/{fileName}", (request, params) -> {
+            String content = RequestUtil.readFile(directory, params.get("fileName"));
+            HttpResponse response;
+            if(content == null) {
+                response = new HttpResponse().setStatusCode(NOT_FOUND_STATUS_CODE).setStatusText(NOT_FOUND_STATUS_TEXT);
+            } else {
+                response = new HttpResponse().setStatusCode(SUCCESS_STATUS_CODE).setStatusText(SUCCESS_STATUS_TEXT)
+                        .setContentType(CONTENT_TYPE_APPLICATION_STREAM)
+                        .setContentLength(content.length())
+                        .setBody(content);
+            }
+            return response;
+        });
     }
 
     public static void handleRequest(Socket socket) {
@@ -28,23 +54,13 @@ public class Main {
             InputStream inputStream = socket.getInputStream();
 
             HttpRequest request = RequestUtil.getHttpRequest(inputStream);
-            HttpResponse response = new HttpResponse();
+            HttpResponse response;
             RouteMatch match = router.match(request.path);
 
             if(match != null) {
-                response.setStatusCode(200);
-                response.setStatusText("OK");
-                if(match.handler != null) {
-                    String bodyMsg = match.handler.handle(request, match.pathParam);
-                    if(bodyMsg != null) {
-                        response.setContentType("text/plain");
-                        response.setContentLength(bodyMsg.length());
-                        response.setBody(bodyMsg);
-                    }
-                }
+                response = match.handler.handle(request, match.pathParam);
             } else {
-                response.setStatusCode(404);
-                response.setStatusText("Not Found");
+                response = new HttpResponse().setStatusCode(NOT_FOUND_STATUS_CODE).setStatusText(NOT_FOUND_STATUS_TEXT);
             }
             socket.getOutputStream().write(response.getBytes());
             socket.getOutputStream().close();
@@ -54,9 +70,12 @@ public class Main {
     }
 
     public static void main(String[] args) {
+        if (args.length > 1 && args[0].equals("--directory")) {
+            directory = args[1];
+        }
         initiateRouter();
         System.out.println("Started HTTP-SERVER");
-        try(ServerSocket serverSocket = new ServerSocket(4221); ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE)){
+        try(ServerSocket serverSocket = new ServerSocket(PORT); ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE)){
             serverSocket.setReuseAddress(true);
             System.out.println("Application Started Listening on port 4221");
             while(true){
