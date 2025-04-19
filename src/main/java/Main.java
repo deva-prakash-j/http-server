@@ -1,20 +1,22 @@
 import bean.HttpRequest;
+import bean.HttpResponse;
+import bean.RouteMatch;
 import util.RequestUtil;
+import util.Router;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashSet;
-import java.util.Set;
 
 public class Main {
 
-    private static final Set<String> allowedPath = new HashSet<>();
+    private static Router router;
 
-    public static void setAllowedPath() {
-        allowedPath.add("/");
-        allowedPath.add("");
+    public static void initiateRouter() {
+        router = new Router();
+        router.addRoute("", null);
+        router.addRoute("/echo/{str}", params -> params.get("str"));
     }
 
     public static void handleRequest(Socket socket) {
@@ -22,12 +24,25 @@ public class Main {
             InputStream inputStream = socket.getInputStream();
 
             HttpRequest request = RequestUtil.getHttpRequest(inputStream);
-            String response = "404 Not Found";
+            HttpResponse response = new HttpResponse();
+            RouteMatch match = router.match(request.path());
 
-            if(allowedPath.contains(request.path())) {
-                response = "200 OK";
+            if(match != null) {
+                response.setStatusCode(200);
+                response.setStatusText("OK");
+                if(match.handler != null) {
+                    String bodyMsg = match.handler.handle(match.pathParam);
+                    if(bodyMsg != null) {
+                        response.setContentType("text/plain");
+                        response.setContentLength(bodyMsg.length());
+                        response.setBody(bodyMsg);
+                    }
+                }
+            } else {
+                response.setStatusCode(404);
+                response.setStatusText("Not Found");
             }
-            socket.getOutputStream().write(String.format("HTTP/1.1 %s\r\n\r\n", response).getBytes());
+            socket.getOutputStream().write(response.getBytes());
             socket.getOutputStream().close();
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
@@ -35,9 +50,9 @@ public class Main {
     }
 
     public static void main(String[] args) {
+        initiateRouter();
         System.out.println("Started HTTP-SERVER");
         Socket socket;
-        setAllowedPath();
         try(ServerSocket serverSocket = new ServerSocket(4221)){
             serverSocket.setReuseAddress(true);
             System.out.println("Application Started Listening on port 4221");
