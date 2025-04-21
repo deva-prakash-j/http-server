@@ -17,45 +17,13 @@ public class Main {
     private static Router router;
     private static String directory;
 
-    public static void initiateRouter() {
-        router = new Router();
-        router.addRoute("", (request, param) -> new HttpResponse()
-                .setStatusCode(SUCCESS_STATUS_CODE).setStatusText(SUCCESS_STATUS_TEXT));
-        router.addRoute("/echo/{str}", (request, params) -> {
-            String str = params.get("str");
-            return new HttpResponse().setStatusCode(SUCCESS_STATUS_CODE).setStatusText(SUCCESS_STATUS_TEXT)
-                    .setContentType(CONTENT_TYPE_TEXT_PLAIN)
-                    .setContentLength(str.length())
-                    .setBody(str);});
-        router.addRoute("/user-agent", (request, params) -> {
-            String userAgent = request.getHeaders().getOrDefault("User-Agent", "Unknown");
-            return new HttpResponse().setStatusCode(SUCCESS_STATUS_CODE).setStatusText(SUCCESS_STATUS_TEXT)
-                    .setContentType(CONTENT_TYPE_TEXT_PLAIN)
-                    .setContentLength(userAgent.length())
-                    .setBody(userAgent);
-        });
-        router.addRoute("/files/{fileName}", (request, params) -> {
-            String content = RequestUtil.readFile(directory, params.get("fileName"));
-            HttpResponse response;
-            if(content == null) {
-                response = new HttpResponse().setStatusCode(NOT_FOUND_STATUS_CODE).setStatusText(NOT_FOUND_STATUS_TEXT);
-            } else {
-                response = new HttpResponse().setStatusCode(SUCCESS_STATUS_CODE).setStatusText(SUCCESS_STATUS_TEXT)
-                        .setContentType(CONTENT_TYPE_APPLICATION_STREAM)
-                        .setContentLength(content.length())
-                        .setBody(content);
-            }
-            return response;
-        });
-    }
-
     public static void handleRequest(Socket socket) {
         try {
             InputStream inputStream = socket.getInputStream();
 
             HttpRequest request = RequestUtil.getHttpRequest(inputStream);
             HttpResponse response;
-            RouteMatch match = router.match(request.path);
+            RouteMatch match = router.match(request.method, request.path);
 
             if(match != null) {
                 response = match.handler.handle(request, match.pathParam);
@@ -73,7 +41,8 @@ public class Main {
         if (args.length > 1 && args[0].equals("--directory")) {
             directory = args[1];
         }
-        initiateRouter();
+        router = Router.getInstance();
+        router.setupRouter(directory);
         System.out.println("Started HTTP-SERVER");
         try(ServerSocket serverSocket = new ServerSocket(PORT); ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE)){
             serverSocket.setReuseAddress(true);

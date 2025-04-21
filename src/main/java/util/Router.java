@@ -1,20 +1,51 @@
 package util;
 
+import bean.HttpResponse;
 import bean.RouteMatch;
 import bean.TrieNode;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import static constants.ServerConstants.*;
+
 public class Router {
 
+    private static Router instance;
     private final TrieNode root;
 
-    public Router() {
+    private Router() {
         this.root = new TrieNode();
     }
 
-    public void addRoute(String pattern, Handler handler) {
+    public static Router getInstance() {
+        if (instance == null) {
+            instance = new Router();
+        }
+        return instance;
+    }
+
+    public void setupRouter(String directory) {
+        instance.addRoute(GET_METHOD, "", (request, param) -> new HttpResponse()
+                .setStatusCode(SUCCESS_STATUS_CODE).setStatusText(SUCCESS_STATUS_TEXT));
+        instance.addRoute(GET_METHOD, "/echo/{str}", (request, params) -> {
+            String str = params.get("str");
+            return new HttpResponse().setStatusCode(SUCCESS_STATUS_CODE).setStatusText(SUCCESS_STATUS_TEXT)
+                    .setContentType(CONTENT_TYPE_TEXT_PLAIN)
+                    .setContentLength(str.length())
+                    .setBody(str);});
+        instance.addRoute(GET_METHOD, "/user-agent", (request, params) -> {
+            String userAgent = request.getHeaders().getOrDefault("User-Agent", "Unknown");
+            return new HttpResponse().setStatusCode(SUCCESS_STATUS_CODE).setStatusText(SUCCESS_STATUS_TEXT)
+                    .setContentType(CONTENT_TYPE_TEXT_PLAIN)
+                    .setContentLength(userAgent.length())
+                    .setBody(userAgent);
+        });
+        instance.addRoute(GET_METHOD, "/files/{fileName}", HandlerImpl.readFile(directory));
+        instance.addRoute(POST_METHOD, "/files/{fileName}", HandlerImpl.writeFile(directory));
+    }
+
+    public void addRoute(String method, String pattern, Handler handler) {
         String[] parts = pattern.split("/");
         TrieNode current = root;
         for (String part: parts) {
@@ -32,10 +63,10 @@ public class Router {
             }
         }
 
-        current.handler = handler;
+        current.handlers.put(method.toUpperCase(), handler);
     }
 
-    public RouteMatch match(String pattern) {
+    public RouteMatch match(String method, String pattern) {
         String[] parts = pattern.split("/");
         TrieNode current = root;
         Map<String, String> params = new HashMap<>();
@@ -52,6 +83,11 @@ public class Router {
             }
         }
 
-        return new RouteMatch(current.handler, params);
+        Handler handler = current.handlers.get(method.toUpperCase());
+        if(handler == null) {
+            handler = ResponseUtil.getMethodNotSupportedHandler();
+        }
+
+        return new RouteMatch(handler, params);
     }
 }

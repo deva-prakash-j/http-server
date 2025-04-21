@@ -80,6 +80,17 @@ public class RequestUtil {
         return headers;
     }
 
+    public static String parseBody(BufferedInputStream bis, Map<String, String> headers) throws IOException {
+        String body = "";
+        if(headers.containsKey("Content-Length")) {
+            int contentLength = Integer.parseInt(headers.get("Content-Length"));
+            byte[] bodyBytes = bis.readNBytes(contentLength);
+            body = new String(bodyBytes, StandardCharsets.UTF_8);
+        }
+
+        return body;
+    }
+
     public static String readFile(String directory, String fileName) {
         try {
             File requestFile = new File(directory, fileName).getCanonicalFile();
@@ -87,6 +98,17 @@ public class RequestUtil {
         } catch (IOException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public static boolean writeFile(String directory, String fileName, String body) {
+        try {
+            File newFile = new File(directory, fileName).getCanonicalFile();
+            Files.writeString(newFile.toPath(), body);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 

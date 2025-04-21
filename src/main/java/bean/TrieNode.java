@@ -9,5 +9,5 @@ public class TrieNode {
     public Map<String, TrieNode> children = new HashMap<>();
     public TrieNode paramChild = null;
     public String paramName = null;
-    public Handler handler = null;
+    public Map<String, Handler> handlers = new HashMap<>();
 }
