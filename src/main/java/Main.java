@@ -31,6 +31,9 @@ public class Main {
                 response = new HttpResponse().setStatusCode(NOT_FOUND_STATUS_CODE).setStatusText(NOT_FOUND_STATUS_TEXT);
             }
             socket.getOutputStream().write(response.getBytes());
+            if(response.isEncoded) {
+                socket.getOutputStream().write(response.getBodyBytes());
+            }
             socket.getOutputStream().close();
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());

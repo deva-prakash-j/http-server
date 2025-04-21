@@ -14,8 +14,9 @@ public class HandlerImpl {
                 response = new HttpResponse().setStatusCode(NOT_FOUND_STATUS_CODE).setStatusText(NOT_FOUND_STATUS_TEXT);
             } else {
                 response = new HttpResponse().setStatusCode(SUCCESS_STATUS_CODE).setStatusText(SUCCESS_STATUS_TEXT)
-                        .setContentType(CONTENT_TYPE_APPLICATION_STREAM)
-                        .setContentLength(content.length())
+                        .addHeader(CONTENT_TYPE, CONTENT_TYPE_APPLICATION_STREAM)
+                        .addHeader(CONTENT_LENGTH, String.valueOf(content.length()))
+                        .addHeader(CONTENT_ENCODING, request.getHeaders().get(ACCEPT_ENCODING))
                         .setBody(content);
             }
             return response;

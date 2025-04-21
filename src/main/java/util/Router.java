@@ -31,14 +31,16 @@ public class Router {
         instance.addRoute(GET_METHOD, "/echo/{str}", (request, params) -> {
             String str = params.get("str");
             return new HttpResponse().setStatusCode(SUCCESS_STATUS_CODE).setStatusText(SUCCESS_STATUS_TEXT)
-                    .setContentType(CONTENT_TYPE_TEXT_PLAIN)
-                    .setContentLength(str.length())
+                    .addHeader(CONTENT_TYPE, CONTENT_TYPE_TEXT_PLAIN)
+                    .addHeader(CONTENT_LENGTH, String.valueOf(str.length()))
+                    .addHeader(CONTENT_ENCODING, request.getHeaders().get(ACCEPT_ENCODING))
                     .setBody(str);});
         instance.addRoute(GET_METHOD, "/user-agent", (request, params) -> {
             String userAgent = request.getHeaders().getOrDefault("User-Agent", "Unknown");
             return new HttpResponse().setStatusCode(SUCCESS_STATUS_CODE).setStatusText(SUCCESS_STATUS_TEXT)
-                    .setContentType(CONTENT_TYPE_TEXT_PLAIN)
-                    .setContentLength(userAgent.length())
+                    .addHeader(CONTENT_TYPE, CONTENT_TYPE_TEXT_PLAIN)
+                    .addHeader(CONTENT_LENGTH, String.valueOf(userAgent.length()))
+                    .addHeader(CONTENT_ENCODING, request.getHeaders().get(ACCEPT_ENCODING))
                     .setBody(userAgent);
         });
         instance.addRoute(GET_METHOD, "/files/{fileName}", HandlerImpl.readFile(directory));

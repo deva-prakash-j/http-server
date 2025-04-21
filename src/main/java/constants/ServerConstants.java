@@ -4,6 +4,7 @@ public class ServerConstants {
 
     public static final int PORT = 4221;
     public static final int THREAD_POOL_SIZE = 10;
+    public static final String SUPPORTED_ENCODING = "gzip";
 
     //Http Code
     public static final int SUCCESS_STATUS_CODE = 200;
@@ -24,4 +25,10 @@ public class ServerConstants {
     //HTTP Method
     public static final String GET_METHOD = "GET";
     public static final String POST_METHOD = "POST";
+
+    //Header Constants
+    public static final String CONTENT_TYPE = "Content-Type";
+    public static final String CONTENT_LENGTH = "Content-Length";
+    public static final String CONTENT_ENCODING = "Content-Encoding";
+    public static final String ACCEPT_ENCODING = "Accept-Encoding";
 }
