@@ -5,8 +5,10 @@ import static constants.ServerConstants.*;
 import util.RequestUtil;
 import util.Router;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -18,23 +20,35 @@ public class Main {
     private static String directory;
 
     public static void handleRequest(Socket socket) {
-        try {
+        try (socket) {
+            socket.setSoTimeout(30000);
             InputStream inputStream = socket.getInputStream();
+            OutputStream outputStream = socket.getOutputStream();
+            BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
 
-            HttpRequest request = RequestUtil.getHttpRequest(inputStream);
-            HttpResponse response;
-            RouteMatch match = router.match(request.method, request.path);
+            while(true) {
 
-            if(match != null) {
-                response = match.handler.handle(request, match.pathParam);
-            } else {
-                response = new HttpResponse().setStatusCode(NOT_FOUND_STATUS_CODE).setStatusText(NOT_FOUND_STATUS_TEXT);
+                HttpRequest request = RequestUtil.getHttpRequest(bufferedInputStream);
+                System.out.println("Received request: " + request.method + " " + request.path);
+                HttpResponse response;
+                RouteMatch match = router.match(request.method, request.path);
+
+                if(match != null) {
+                    response = match.handler.handle(request, match.pathParam);
+                } else {
+                    response = new HttpResponse().setStatusCode(NOT_FOUND_STATUS_CODE).setStatusText(NOT_FOUND_STATUS_TEXT);
+                }
+                outputStream.write(response.getBytes(request.getHeaders().get(CONNECTION)));
+                if(response.isEncoded) {
+                    outputStream.write(response.getBodyBytes());
+                }
+
+                if (CLOSE.equalsIgnoreCase(request.getHeaders().get(CONNECTION))) {
+                    break;
+                }
+                outputStream.flush();
             }
-            socket.getOutputStream().write(response.getBytes());
-            if(response.isEncoded) {
-                socket.getOutputStream().write(response.getBodyBytes());
-            }
-            socket.getOutputStream().close();
+            //socket.getOutputStream().close();
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
         }

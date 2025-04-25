@@ -46,7 +46,7 @@ public class HttpResponse {
         return this;
     }
 
-    public byte[] getBytes() {
+    public byte[] getBytes(String connection) {
         int contentLength = 0;
         StringBuilder builder = new StringBuilder();
         builder.append(httpVersion).append(' ')
@@ -75,10 +75,15 @@ public class HttpResponse {
             builder.append(CONTENT_LENGTH).append(": ").append(contentLength).append("\r\n");
         }
 
+        builder.append(CONNECTION).append(": ");
+        if(connection != null) {
+            builder.append(connection);
+        } else {
+            builder.append(KEEP_ALIVE);
+        }
         builder.append("\r\n");
-        System.out.println(Arrays.toString(bodyBytes));
-        System.out.println(bodyBytes.length);
-        System.out.println(builder.toString());
+
+        builder.append("\r\n");
         if(body != null && !isEncoded) {
             builder.append(body);
         }

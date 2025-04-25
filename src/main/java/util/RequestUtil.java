@@ -13,9 +13,7 @@ import java.util.Map;
 
 public class RequestUtil {
 
-    public static HttpRequest getHttpRequest(InputStream inputStream) throws IOException {
-        BufferedInputStream bis = new BufferedInputStream(inputStream);
-
+    public static HttpRequest getHttpRequest(BufferedInputStream bis) throws IOException {
         byte[] bytes = new byte[1024];
         int bytesRead = 0;
         int b;
